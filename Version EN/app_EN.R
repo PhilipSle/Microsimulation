@@ -13,23 +13,24 @@ library(tibble)
 library(data.table)
 library(plotly)
 library(DT)
+
 if(!exists("Population_data")){
-  Population_data <- readRDS("./Version EN/Population_data.RDS")
+  Population_data <- fread("./Version EN/Population_data.csv")
 }
 if(!exists("Births_data")){
-  Births_data <- readRDS("./Version EN/Births_data.RDS")
+  Births_data <- fread("./Version EN/Births_data.csv")
 }
 if(!exists("Deaths_data")){
-  Deaths_data <- readRDS("./Version EN/Deaths_data.RDS")
+  Deaths_data <- fread("./Version EN/Deaths_data.csv")
 }
 if(!exists("Immigration_data")){
-  Immigration_data <- readRDS("./Version EN/Immigration_data.RDS")
+  Immigration_data <- fread("./Version EN/Immigration_data.csv")
 }
 if(!exists("Emigration_data")){
-  Emigration_data <- readRDS("./Version EN/Emigration_data.RDS")
+  Emigration_data <- fread("./Version EN/Emigration_data.csv")
 }
 if(!exists("Internal_migration_data")){
-  Internal_migration_data <- readRDS("./Version EN/Internal_migration_data.RDS")
+  Internal_migration_data <- fread("./Version EN/Internal_migration_data.csv")
 }
 
 
@@ -169,73 +170,70 @@ server <- function(input, output, session) {
     
     
     if(data_selected() == "Population"){
-      
-      Population_data %>%
-        filter(Variant %in% input$variant &
-                 Year %in% c(input$forecast_years[1]:input$forecast_years[2]) &
-                 Sex == input$sex &
-                 Province %in% input$province &
-                 Age >= age_lower_limit & Age <= age_upper_limit &
-                 Country_of_Birth == input$country_of_birth) %>% 
-        group_by(Year, Country_of_Birth, Province, Sex, Variant) %>% 
-        summarise(Number = sum(Number))
+
+      Population_data[Variant %in% input$variant &
+                        Year %in% c(input$forecast_years[1]:input$forecast_years[2]) &
+                        Sex == input$sex &
+                        Province %in% input$province &
+                        Age >= age_lower_limit & Age <= age_upper_limit &
+                        Country_of_Birth == input$country_of_birth, 
+                      .(Number = sum(Number)),
+                      by = c("Year", "Country_of_Birth", "Province", "Sex", "Variant")]
+
       
     } else if(data_selected() == "Births"){
       
-      Births_data %>% 
-        filter(Variant %in% input$variant &
-                 Year %in% c(input$forecast_years[1]:input$forecast_years[2]) &
-                 Province %in% input$province &
-                 Age >= input$age_mother[1] & Age <= input$age_mother[2] &
-                 Country_of_Birth_Mother == input$country_of_birth) %>% 
-        group_by(Year, Province, Country_of_Birth_Mother, Variant) %>% 
-        summarise(Number = sum(Number))
+      Births_data[Variant %in% input$variant &
+                    Year %in% c(input$forecast_years[1]:input$forecast_years[2]) &
+                    Province %in% input$province &
+                    Age >= input$age_mother[1] & Age <= input$age_mother[2] &
+                    Country_of_Birth_Mother == input$country_of_birth,
+                  .(Number = sum(Number)),
+                  by = c("Year", "Province", "Country_of_Birth_Mother", "Variant")]
+      
       
     } else if(data_selected() == "Deaths"){
       
-      Deaths_data %>% 
-        filter(Variant %in% input$variant &
-                 Year %in% c(input$forecast_years[1]:input$forecast_years[2]) &
-                 Province %in% input$province &
-                 Age >= age_lower_limit & Age <= age_upper_limit &
-                 Sex == input$sex) %>% 
-        group_by(Year, Province, Sex, Variant) %>% 
-        summarise(Number = sum(Number))
+      Deaths_data[Variant %in% input$variant &
+                    Year %in% c(input$forecast_years[1]:input$forecast_years[2]) &
+                    Province %in% input$province &
+                    Age >= age_lower_limit & Age <= age_upper_limit &
+                    Sex == input$sex,
+                  .(Number = sum(Number)),
+                  by = c("Year", "Province", "Sex", "Variant")]
       
     } else if(data_selected() == "Immigration"){
       
-      Immigration_data %>% 
-        filter(Variant %in% input$variant &
-                 Year %in% c(input$forecast_years[1]:input$forecast_years[2]) &
-                 Province %in% input$province &
-                 Age >= age_lower_limit & Age <= age_upper_limit &
-                 Sex == input$sex & 
-                 Country_of_Birth == input$country_of_birth) %>% 
-        group_by(Year, Province, Sex, Variant, Country_of_Birth) %>% 
-        summarise(Number = sum(Number))
+      Immigration_data[Variant %in% input$variant &
+                         Year %in% c(input$forecast_years[1]:input$forecast_years[2]) &
+                         Province %in% input$province &
+                         Age >= age_lower_limit & Age <= age_upper_limit &
+                         Sex == input$sex & 
+                         Country_of_Birth == input$country_of_birth,
+                       .(Number = sum(Number)),
+                       by = c("Year", "Province", "Sex", "Variant", "Country_of_Birth")]
+      
       
     } else if(data_selected() == "Emigration"){
       
-      Emigration_data %>% 
-        filter(Variant %in% input$variant &
-                 Year %in% c(input$forecast_years[1]:input$forecast_years[2]) &
-                 Province %in% input$province &
-                 Age >= age_lower_limit & Age <= age_upper_limit &
-                 Sex == input$sex) %>% 
-        group_by(Year, Province, Sex, Variant) %>% 
-        summarise(Number = sum(Number))
+      Emigration_data[Variant %in% input$variant &
+                        Year %in% c(input$forecast_years[1]:input$forecast_years[2]) &
+                        Province %in% input$province &
+                        Age >= age_lower_limit & Age <= age_upper_limit &
+                        Sex == input$sex,
+                      .(Number = sum(Number)),
+                      by = c("Year", "Province", "Sex", "Variant")]
       
     } else if(data_selected() == "Migration between Provinces"){
       
-      data_int_migra <- Internal_migration_data %>% 
-        filter(Variant %in% input$variant &
-                 Year %in% c(input$forecast_years[1]:input$forecast_years[2]) &
-                 Sex == input$sex & 
-                 Country_of_Birth == input$country_of_birth &
-                 Province_Origin %in% input$province_of_origin & 
-                 Province_Destination %in% input$province_of_destination) %>% 
-        group_by(Variant, Year, Sex, Country_of_Birth) %>% 
-        summarise(Number = sum(Number))
+      data_int_migra <- Internal_migration_data[Variant %in% input$variant &
+                                                  Year %in% c(input$forecast_years[1]:input$forecast_years[2]) &
+                                                  Sex == input$sex & 
+                                                  Country_of_Birth == input$country_of_birth &
+                                                  Province_Origin %in% input$province_of_origin & 
+                                                  Province_Destination %in% input$province_of_destination,
+                                                .(Number = sum(Number)),
+                                                by = c("Variant", "Year", "Sex", "Country_of_Birth")]
       
     }
     

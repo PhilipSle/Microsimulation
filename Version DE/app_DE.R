@@ -17,23 +17,24 @@ library(tibble)
 library(data.table)
 library(plotly)
 library(DT)
+
 if(!exists("Bevoelkerung_variantenvergleich")){
-  Bevoelkerung_variantenvergleich <- readRDS("./Version DE/Bevoelkerung_variantenvergleich.RDS")
+  Bevoelkerung_variantenvergleich <- fread("./Version DE/Bevoelkerung_variantenvergleich.csv")
 }
 if(!exists("Geburten_variantenvergleich")){
-  Geburten_variantenvergleich <- readRDS("./Version DE/Geburten_variantenvergleich.RDS")
+  Geburten_variantenvergleich <- fread("./Version DE/Geburten_variantenvergleich.csv")
 }
 if(!exists("Sterbefaelle_variantenvergleich")){
-  Sterbefaelle_variantenvergleich <- readRDS("./Version DE/Sterbefaelle_variantenvergleich.RDS")
+  Sterbefaelle_variantenvergleich <- fread("./Version DE/Sterbefaelle_variantenvergleich.csv")
 }
 if(!exists("Zuwanderung_variantenvergleich")){
-  Zuwanderung_variantenvergleich <- readRDS("./Version DE/Zuwanderung_variantenvergleich.RDS")
+  Zuwanderung_variantenvergleich <- fread("./Version DE/Zuwanderung_variantenvergleich.csv")
 }
 if(!exists("Abwanderung_variantenvergleich")){
-  Abwanderung_variantenvergleich <- readRDS("./Version DE/Abwanderung_variantenvergleich.RDS")
+  Abwanderung_variantenvergleich <- fread("./Version DE/Abwanderung_variantenvergleich.csv")
 }
 if(!exists("Binnenwanderung_variantenvergleich")){
-  Binnenwanderung_variantenvergleich <- readRDS("./Version DE/Binnenwanderung_variantenvergleich.RDS")
+  Binnenwanderung_variantenvergleich <- fread("./Version DE/Binnenwanderung_variantenvergleich.csv")
 }
 
 
@@ -163,73 +164,77 @@ server <- function(input, output, session) {
     
     if(data_selected() == "Bevölkerung"){
       
-      Bevoelkerung_variantenvergleich %>%
-        filter(Variante %in% input$variante &
-                 Jahr %in% c(input$prognosejahre[1]:input$prognosejahre[2]) &
-                 Geschlecht == input$geschlecht &
-                 Bundesland %in% input$bundesland &
-                 Alter >= alter_untergrenze & Alter <= alter_obergrenze &
-                 Geburtsland == input$geburtsland) %>% 
-        group_by(Jahr, Geburtsland, Bundesland, Geschlecht, Variante) %>% 
-        summarise(Anzahl = sum(Anzahl))
+      Bevoelkerung_variantenvergleich[Variante %in% input$variante &
+                                        Jahr %in% c(input$prognosejahre[1]:input$prognosejahre[2]) &
+                                        Geschlecht == input$geschlecht &
+                                        Bundesland %in% input$bundesland &
+                                        Alter >= alter_untergrenze & Alter <= alter_obergrenze &
+                                        Geburtsland == input$geburtsland, 
+                                      .(Anzahl = sum(Anzahl)), 
+                                      by = c("Jahr", "Geburtsland", "Bundesland", "Geschlecht", "Variante")]
       
     } else if(data_selected() == "Geburten"){
       
-      Geburten_variantenvergleich %>% 
-        filter(Variante %in% input$variante &
-                 Jahr %in% c(input$prognosejahre[1]:input$prognosejahre[2]) &
-                 Bundesland %in% input$bundesland &
-                 Alter >= input$alter_der_mutter[1] & Alter <= input$alter_der_mutter[2] &
-                 Geburtsland_Mutter == input$geburtsland) %>% 
-        group_by(Jahr, Bundesland, Geburtsland_Mutter, Variante) %>% 
-        summarise(Anzahl = sum(Anzahl))
+      
+      Geburten_variantenvergleich[Variante %in% input$variante &
+                                    Jahr %in% c(input$prognosejahre[1]:input$prognosejahre[2]) &
+                                    Bundesland %in% input$bundesland &
+                                    Alter >= input$alter_der_mutter[1] & Alter <= input$alter_der_mutter[2] &
+                                    Geburtsland_Mutter == input$geburtsland,
+                                  .(Anzahl = sum(Anzahl)),
+                                  by = c("Jahr", "Bundesland", "Geburtsland_Mutter", "Variante")
+                                  ]
+      
       
     } else if(data_selected() == "Sterbefälle"){
       
-      Sterbefaelle_variantenvergleich %>% 
-        filter(Variante %in% input$variante &
-                 Jahr %in% c(input$prognosejahre[1]:input$prognosejahre[2]) &
-                 Bundesland %in% input$bundesland &
-                 Alter >= alter_untergrenze & Alter <= alter_obergrenze &
-                 Geschlecht == input$geschlecht) %>% 
-        group_by(Jahr, Bundesland, Geschlecht, Variante) %>% 
-        summarise(Anzahl = sum(Anzahl))
+      
+      Sterbefaelle_variantenvergleich[Variante %in% input$variante &
+                                        Jahr %in% c(input$prognosejahre[1]:input$prognosejahre[2]) &
+                                        Bundesland %in% input$bundesland &
+                                        Alter >= alter_untergrenze & Alter <= alter_obergrenze &
+                                        Geschlecht == input$geschlecht,
+                                      .(Anzahl = sum(Anzahl)),
+                                      by = c("Jahr", "Bundesland", "Geschlecht", "Variante")]
+      
       
     } else if(data_selected() == "Immigration"){
       
-      Zuwanderung_variantenvergleich %>% 
-        filter(Variante %in% input$variante &
-                 Jahr %in% c(input$prognosejahre[1]:input$prognosejahre[2]) &
-                 Bundesland %in% input$bundesland &
-                 Alter >= alter_untergrenze & Alter <= alter_obergrenze &
-                 Geschlecht == input$geschlecht & 
-                 Geburtsland == input$geburtsland) %>% 
-        group_by(Jahr, Bundesland, Geschlecht, Variante, Geburtsland) %>% 
-        summarise(Anzahl = sum(Anzahl))
+      
+      Zuwanderung_variantenvergleich[Variante %in% input$variante &
+                                       Jahr %in% c(input$prognosejahre[1]:input$prognosejahre[2]) &
+                                       Bundesland %in% input$bundesland &
+                                       Alter >= alter_untergrenze & Alter <= alter_obergrenze &
+                                       Geschlecht == input$geschlecht & 
+                                       Geburtsland == input$geburtsland,
+                                     .(Anzahl = sum(Anzahl)),
+                                     by = c("Jahr", "Bundesland", "Geschlecht", "Variante", "Geburtsland")]
+      
       
     } else if(data_selected() == "Emigration"){
       
-      Abwanderung_variantenvergleich %>% 
-        filter(Variante %in% input$variante &
-                 Jahr %in% c(input$prognosejahre[1]:input$prognosejahre[2]) &
-                 Bundesland %in% input$bundesland &
-                 Alter >= alter_untergrenze & Alter <= alter_obergrenze &
-                 Geschlecht == input$geschlecht) %>% 
-        group_by(Jahr, Bundesland, Geschlecht, Variante) %>% 
-        summarise(Anzahl = sum(Anzahl))
       
+      Abwanderung_variantenvergleich[Variante %in% input$variante &
+                                       Jahr %in% c(input$prognosejahre[1]:input$prognosejahre[2]) &
+                                       Bundesland %in% input$bundesland &
+                                       Alter >= alter_untergrenze & Alter <= alter_obergrenze &
+                                       Geschlecht == input$geschlecht,
+                                     .(Anzahl = sum(Anzahl)),
+                                     by = c("Jahr", "Bundesland", "Geschlecht", "Variante")]
+      
+
     } else if(data_selected() == "Migration zwischen Bundesländern"){
       
-      data_biwa <- Binnenwanderung_variantenvergleich %>% 
-        filter(Variante %in% input$variante &
-                 Jahr %in% c(input$prognosejahre[1]:input$prognosejahre[2]) &
-                 Geschlecht == input$geschlecht & 
-                 Geburtsland == input$geburtsland &
-                 Herkunftsbundesland %in% input$herkunftsbundesland & 
-                 Zielbundesland %in% input$zielbundesland) %>% 
-        group_by(Variante, Jahr, Geschlecht, Geburtsland) %>% 
-        summarise(Anzahl = sum(Anzahl))
       
+      data_biwa <- Binnenwanderung_variantenvergleich[Variante %in% input$variante &
+                                                        Jahr %in% c(input$prognosejahre[1]:input$prognosejahre[2]) &
+                                                        Geschlecht == input$geschlecht & 
+                                                        Geburtsland == input$geburtsland &
+                                                        Herkunftsbundesland %in% input$herkunftsbundesland & 
+                                                        Zielbundesland %in% input$zielbundesland,
+                                                      .(Anzahl = sum(Anzahl)),
+                                                      by = c("Variante", "Jahr", "Geschlecht", "Geburtsland")]
+
     }
     
   })
